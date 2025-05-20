@@ -12,11 +12,24 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Handle an incoming authentication request.
+     * Login user dan dapatkan token.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Validation\ValidationException
+     * @OA\Post(
+     *     path="/login",
+     *     summary="Login user",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email","password"},
+     *             @OA\Property(property="email", type="string", format="email", example="user@email.com"),
+     *             @OA\Property(property="password", type="string", example="password123")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Login berhasil, token dikembalikan"),
+     *     @OA\Response(response=401, description="Kredensial salah"),
+     *     @OA\Response(response=422, description="Validasi gagal")
+     * )
      */
     public function login(Request $request)
     {
@@ -75,10 +88,16 @@ class AuthController extends Controller
     }
 
     /**
-     * Log the user out of the application.
+     * Logout user (revoke token).
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @OA\Post(
+     *     path="/logout",
+     *     summary="Logout user (revoke token)",
+     *     tags={"Auth"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Berhasil logout"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function logout(Request $request)
     {

@@ -461,8 +461,9 @@ async function deleteTask(taskId) {
         return;
     }
 
+    showSpinner('taskManagementView', 'Menghapus tugas...');
+
     try {
-        showSpinner('taskManagementView', 'Menghapus tugas...'); // Menampilkan spinner di seluruh view task
         const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
             method: 'DELETE',
             headers: {
@@ -477,21 +478,24 @@ async function deleteTask(taskId) {
             return;
         }
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Gagal menghapus tugas.' }));
-            throw new Error(errorData.message || `Error: ${response.status}`);
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (error) {
+            throw new Error('Format respons tidak valid');
         }
 
-        const result = await response.json();
-        if (result.success) {
-            showNotification(result.message || 'Tugas berhasil dihapus.', 'success', 'taskManagementView');
-            loadTasks(); // Muat ulang daftar tugas
-        } else {
-            throw new Error(result.message || 'Gagal menghapus tugas dari server.');
+        if (!response.ok || result.status !== 'success') {
+            throw new Error(result.message || `Gagal menghapus tugas: ${response.status}`);
         }
 
+        showNotification(result.message || 'Tugas berhasil dihapus.', 'success', 'taskManagementView');
+        loadTasks(); // Muat ulang daftar tugas
     } catch (error) {
         showNotification(`Gagal menghapus tugas: ${error.message}`, 'error', 'taskManagementView');
+    } finally {
+        hideSpinner('taskManagementView');
     }
 }
 

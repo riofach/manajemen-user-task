@@ -271,3 +271,63 @@ Jika token tidak valid atau logout tidak berfungsi:
 1. Periksa apakah cookie sesi diatur dengan benar
 2. Pastikan domain cookie sesuai dengan domain aplikasi
 3. Hapus cache browser dan coba login ulang
+
+## Dokumentasi API Otomatis (Swagger / OpenAPI)
+
+Proyek ini sudah terintegrasi dengan **Swagger (OpenAPI)** menggunakan package [L5-Swagger](https://github.com/DarkaOnLine/L5-Swagger). Seluruh endpoint API terdokumentasi otomatis dan dapat diakses melalui Swagger UI.
+
+### Cara Generate Dokumentasi
+
+Setiap kali ada perubahan pada anotasi OpenAPI di controller, jalankan perintah berikut untuk generate ulang dokumentasi:
+
+```bash
+php artisan l5-swagger:generate
+```
+
+File dokumentasi akan di-generate ke `storage/api-docs/swagger.json`.
+
+### Cara Akses Swagger UI
+
+Buka browser dan akses:
+
+```
+http://localhost:8000/api/documentation
+```
+
+Swagger UI akan menampilkan seluruh endpoint API beserta detail request, response, dan contoh payload. Anda dapat mencoba endpoint langsung dari browser menggunakan fitur "Try it out".
+
+### Konfigurasi Penting
+
+-   Pastikan variabel `.env` berikut sudah diisi agar base URL API di Swagger benar:
+    ```env
+    L5_SWAGGER_CONST_HOST=http://localhost:8000/api
+    ```
+-   Anda dapat mengubah konfigurasi Swagger di file `config/l5-swagger.php` sesuai kebutuhan tim.
+-   Untuk keamanan, batasi akses dokumentasi di production (misal dengan middleware atau IP whitelist).
+
+### Tips untuk Tim
+
+-   **Selalu generate ulang dokumentasi** setelah menambah/mengubah endpoint atau anotasi.
+-   **Gunakan Swagger UI** untuk eksplorasi, testing, dan integrasi API dengan tim frontend/mobile.
+-   **Swagger sangat membantu** untuk onboarding developer baru dan memastikan API selalu terdokumentasi dengan baik.
+
+## Sneak Peek: Screenshot Aplikasi
+
+Untuk melihat contoh tampilan antarmuka dan fitur utama aplikasi, silakan buka folder berikut:
+
+```
+public/images/
+```
+
+Di dalam folder tersebut terdapat berbagai screenshot hasil implementasi, seperti:
+
+-   Tampilan dashboard utama
+-   Daftar tugas (Tugas Saya)
+-   Manajemen Pengguna (role admin/manager)
+-   Log Aktivitas Sistem
+-   Proses login
+-   Proses create/edit tugas
+-   Status user (aktif/nonaktif)
+-   Fitur role-based access (admin, manager, staff)
+
+Screenshot ini dapat digunakan sebagai referensi visual bagi tim pengembang, QA, maupun stakeholder untuk memahami hasil akhir dan fitur yang sudah berjalan di aplikasi.

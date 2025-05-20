@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use OpenApi\Annotations as OA;
 
 class TaskController extends Controller
 {
@@ -19,6 +20,21 @@ class TaskController extends Controller
      * - Admin: semua task
      * - Manager: task yang dibuatnya, ditugaskan padanya, atau ditugaskan ke staff
      * - Staff: task yang dibuatnya atau ditugaskan padanya
+     *
+     * @OA\Get(
+     *     path="/tasks",
+     *     summary="Ambil daftar tugas",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Berhasil mengambil daftar tugas"
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthorized"
+     *     )
+     * )
      */
     public function index(Request $request)
     {
@@ -153,6 +169,27 @@ class TaskController extends Controller
      * Store a newly created resource in storage.
      * POST /tasks
      * Akses: Semua role bisa membuat. Manager hanya bisa assign ke staff.
+     *
+     * @OA\Post(
+     *     path="/tasks",
+     *     summary="Tambah tugas baru",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"title"},
+     *             @OA\Property(property="title", type="string", example="Tugas Baru"),
+     *             @OA\Property(property="description", type="string", example="Deskripsi tugas"),
+     *             @OA\Property(property="assigned_to_id", type="string", format="uuid", example="uuid-user"),
+     *             @OA\Property(property="status", type="string", enum={"pending","in_progress","done"}, example="pending"),
+     *             @OA\Property(property="due_date", type="string", format="date", example="2024-06-30")
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Tugas berhasil dibuat"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=422, description="Validasi gagal")
+     * )
      */
     public function store(Request $request)
     {
@@ -202,6 +239,17 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      * GET /tasks/{task}
+     *
+     * @OA\Get(
+     *     path="/tasks/{task}",
+     *     summary="Ambil detail tugas",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Detail tugas berhasil diambil"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=404, description="Tugas tidak ditemukan")
+     * )
      */
     public function show(Task $task)
     {
@@ -212,6 +260,28 @@ class TaskController extends Controller
     /**
      * Update the specified resource in storage.
      * PUT /tasks/{task}
+     *
+     * @OA\Put(
+     *     path="/tasks/{task}",
+     *     summary="Update tugas",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="title", type="string", example="Tugas Update"),
+     *             @OA\Property(property="description", type="string", example="Deskripsi update"),
+     *             @OA\Property(property="assigned_to_id", type="string", format="uuid", example="uuid-user"),
+     *             @OA\Property(property="status", type="string", enum={"pending","in_progress","done"}, example="in_progress"),
+     *             @OA\Property(property="due_date", type="string", format="date", example="2024-07-01")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Tugas berhasil diperbarui"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=404, description="Tugas tidak ditemukan"),
+     *     @OA\Response(response=422, description="Validasi gagal")
+     * )
      */
     public function update(Request $request, Task $task)
     {
@@ -252,6 +322,17 @@ class TaskController extends Controller
     /**
      * Remove the specified resource from storage.
      * DELETE /tasks/{task}
+     *
+     * @OA\Delete(
+     *     path="/tasks/{task}",
+     *     summary="Hapus tugas",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="task", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Tugas berhasil dihapus"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=404, description="Tugas tidak ditemukan")
+     * )
      */
     public function destroy(Task $task)
     {
@@ -267,6 +348,20 @@ class TaskController extends Controller
      * Export daftar tugas ke CSV (Bonus)
      * GET /tasks/export/csv
      * Akses: semua role (admin, manager, staff)
+     *
+     * @OA\Get(
+     *     path="/tasks/export/csv",
+     *     summary="Export daftar tugas ke CSV",
+     *     tags={"Task"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="File CSV berhasil diunduh",
+     *         @OA\MediaType(mediaType="text/csv")
+     *     ),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
      */
     public function exportCsv(Request $request)
     {

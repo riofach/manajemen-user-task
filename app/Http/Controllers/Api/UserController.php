@@ -13,9 +13,16 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     * GET /users
-     * Akses: admin, manager
+     * Ambil daftar pengguna.
+     *
+     * @OA\Get(
+     *     path="/users",
+     *     summary="Ambil daftar pengguna",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Daftar pengguna berhasil diambil"),
+     *     @OA\Response(response=401, description="Unauthorized")
+     * )
      */
     public function index(Request $request)
     {
@@ -34,9 +41,29 @@ class UserController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     * POST /users
-     * Akses: admin
+     * Tambah pengguna baru.
+     *
+     * @OA\Post(
+     *     path="/users",
+     *     summary="Tambah pengguna baru",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name","email","password","role"},
+     *             @OA\Property(property="name", type="string", example="Nama Pengguna"),
+     *             @OA\Property(property="email", type="string", format="email", example="user@email.com"),
+     *             @OA\Property(property="password", type="string", example="password123"),
+     *             @OA\Property(property="password_confirmation", type="string", example="password123"),
+     *             @OA\Property(property="role", type="string", enum={"admin","manager","staff"}, example="staff"),
+     *             @OA\Property(property="status", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Pengguna berhasil dibuat"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=422, description="Validasi gagal")
+     * )
      */
     public function store(Request $request)
     {
@@ -89,9 +116,18 @@ class UserController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     * GET /users/{user}
-     * Akses: admin, manager
+     * Ambil detail pengguna.
+     *
+     * @OA\Get(
+     *     path="/users/{user}",
+     *     summary="Ambil detail pengguna",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="user", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Detail pengguna berhasil diambil"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=404, description="Pengguna tidak ditemukan")
+     * )
      */
     public function show(User $user) // Menggunakan Route Model Binding
     {
@@ -116,9 +152,30 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
-     * PUT/PATCH /users/{user}
-     * Akses: admin, atau pengguna itu sendiri
+     * Update pengguna.
+     *
+     * @OA\Put(
+     *     path="/users/{user}",
+     *     summary="Update pengguna",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="user", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", example="Nama Update"),
+     *             @OA\Property(property="email", type="string", format="email", example="update@email.com"),
+     *             @OA\Property(property="password", type="string", example="passwordBaru123"),
+     *             @OA\Property(property="password_confirmation", type="string", example="passwordBaru123"),
+     *             @OA\Property(property="role", type="string", enum={"admin","manager","staff"}, example="manager"),
+     *             @OA\Property(property="status", type="boolean", example=false)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Data pengguna berhasil diperbarui"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=404, description="Pengguna tidak ditemukan"),
+     *     @OA\Response(response=422, description="Validasi gagal")
+     * )
      */
     public function update(Request $request, User $user)
     {
@@ -184,9 +241,19 @@ class UserController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
-     * DELETE /users/{user}
-     * Akses: admin
+     * Hapus pengguna.
+     *
+     * @OA\Delete(
+     *     path="/users/{user}",
+     *     summary="Hapus pengguna",
+     *     tags={"User"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(name="user", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Pengguna berhasil dihapus"),
+     *     @OA\Response(response=401, description="Unauthorized"),
+     *     @OA\Response(response=403, description="Tidak dapat menghapus akun sendiri"),
+     *     @OA\Response(response=404, description="Pengguna tidak ditemukan")
+     * )
      */
     public function destroy(User $user)
     {
