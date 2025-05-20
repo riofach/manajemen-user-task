@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Dashboard - Manajemen Task</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+        />
+        <link rel="stylesheet" href="css/style.css" />
+    </head>
+    <body>
+        <!-- Navbar -->
+        <div id="navbarPlaceholder"></div>
+
+        <div class="container-fluid">
+            <div class="row">
+                <!-- Sidebar -->
+                <nav
+                    id="sidebarMenu"
+                    class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse d-none"
+                >
+                    <div class="position-sticky pt-3">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a
+                                    class="nav-link active"
+                                    aria-current="page"
+                                    href="#"
+                                    id="navTasks"
+                                >
+                                    <i class="bi bi-list-task"></i> Tugas Saya
+                                </a>
+                            </li>
+                            <li class="nav-item manager-admin-only hidden">
+                                <a
+                                    class="nav-link"
+                                    href="#"
+                                    id="navUserManagement"
+                                >
+                                    <i class="bi bi-people"></i> Manajemen
+                                    Pengguna
+                                </a>
+                            </li>
+                            <li class="nav-item admin-only hidden">
+                                <a
+                                    class="nav-link"
+                                    href="#"
+                                    id="navActivityLogs"
+                                >
+                                    <i class="bi bi-clipboard-data"></i> Log
+                                    Aktivitas
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <!-- Main content -->
+                <main
+                    class="col-md-9 ms-sm-auto col-lg-10 px-md-4 content"
+                    id="mainContentArea"
+                >
+                    <div id="dashboardView" class="main-content p-3">
+                        <h2>Selamat Datang!</h2>
+                        <p>Pilih menu dari sidebar untuk memulai.</p>
+                    </div>
+                    <div
+                        id="taskManagementView"
+                        class="main-content p-3 hidden"
+                    >
+                        <!-- Konten Manajemen Tugas akan dimuat di sini oleh dashboard.js -->
+                    </div>
+                    <div
+                        id="userManagementView"
+                        class="main-content p-3 manager-admin-only hidden"
+                    >
+                        <!-- Konten Manajemen Pengguna akan dimuat di sini oleh admin.js -->
+                    </div>
+                    <div
+                        id="activityLogsView"
+                        class="main-content p-3 admin-only hidden"
+                    >
+                        <!-- Konten Log Aktivitas akan dimuat di sini oleh admin.js -->
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <footer class="footer mt-auto">
+            <div class="container">
+                <span>&copy; 2025 Proyek Manajemen User Task</span>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="js/config.js"></script>
+        <script src="js/auth.js"></script>
+        <script src="js/ui.js"></script>
+        <script src="js/dashboard.js"></script>
+        <script src="js/admin.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", async () => {
+                if (!localStorage.getItem("authToken")) {
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                try {
+                    const response = await fetch("partials/navbar.html");
+                    if (response.ok) {
+                        const navbarHtml = await response.text();
+                        const navbarPlaceholder =
+                            document.getElementById("navbarPlaceholder");
+                        if (navbarPlaceholder)
+                            navbarPlaceholder.innerHTML = navbarHtml;
+
+                        const logoutButton =
+                            document.getElementById("logoutButton");
+                        if (
+                            logoutButton &&
+                            typeof handleLogout === "function"
+                        ) {
+                            logoutButton.addEventListener(
+                                "click",
+                                handleLogout
+                            );
+                        }
+
+                        const userData = JSON.parse(
+                            localStorage.getItem("userData")
+                        );
+                        if (userData && userData.name) {
+                            const userNameDisplay =
+                                document.getElementById("userNameDisplay");
+                            if (userNameDisplay)
+                                userNameDisplay.textContent = `Hi, ${userData.name}!`;
+                        }
+                    } else {
+                        console.error(
+                            "Failed to load navbar:",
+                            response.status
+                        );
+                    }
+                    const sidebarMenu = document.getElementById("sidebarMenu");
+                    if (sidebarMenu) sidebarMenu.classList.remove("d-none");
+                } catch (error) {
+                    console.error("Error loading navbar:", error);
+                }
+
+                if (typeof initializeDashboard === "function") {
+                    initializeDashboard();
+                }
+
+                const userData = JSON.parse(localStorage.getItem("userData"));
+                if (userData && userData.role === "admin") {
+                    document
+                        .querySelectorAll(".admin-only")
+                        .forEach((el) => el.classList.remove("hidden"));
+                }
+
+                if (
+                    userData &&
+                    (userData.role === "admin" || userData.role === "manager")
+                ) {
+                    document
+                        .querySelectorAll(".manager-admin-only")
+                        .forEach((el) => el.classList.remove("hidden"));
+                }
+
+                const navTasks = document.getElementById("navTasks");
+                if (navTasks)
+                    navTasks.addEventListener("click", () =>
+                        showView("taskManagementView")
+                    );
+
+                if (userData) {
+                    if (
+                        userData.role === "admin" ||
+                        userData.role === "manager"
+                    ) {
+                        const navUserManagement =
+                            document.getElementById("navUserManagement");
+                        if (navUserManagement)
+                            navUserManagement.addEventListener("click", () =>
+                                showView("userManagementView")
+                            );
+                    }
+
+                    if (userData.role === "admin") {
+                        const navActivityLogs =
+                            document.getElementById("navActivityLogs");
+                        if (navActivityLogs)
+                            navActivityLogs.addEventListener("click", () =>
+                                showView("activityLogsView")
+                            );
+                    }
+                }
+                showView("taskManagementView");
+            });
+
+            function showView(viewId) {
+                const views = [
+                    "dashboardView",
+                    "taskManagementView",
+                    "userManagementView",
+                    "activityLogsView",
+                ];
+                views.forEach((id) => {
+                    const viewElement = document.getElementById(id);
+                    if (viewElement) viewElement.classList.add("hidden");
+                });
+
+                const targetView = document.getElementById(viewId);
+                if (targetView) {
+                    targetView.classList.remove("hidden");
+                    if (
+                        viewId === "taskManagementView" &&
+                        typeof loadTasks === "function"
+                    )
+                        loadTasks();
+                    if (
+                        viewId === "userManagementView" &&
+                        typeof loadUsers === "function"
+                    )
+                        loadUsers();
+                    if (
+                        viewId === "activityLogsView" &&
+                        typeof loadActivityLogs === "function"
+                    )
+                        loadActivityLogs();
+                }
+            }
+        </script>
+    </body>
+</html>

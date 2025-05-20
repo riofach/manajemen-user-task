@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="id">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>API Debug - Manajemen Task</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="css/style.css" />
+        <style>
+            .debug-container {
+                max-width: 800px;
+                margin: 2rem auto;
+                padding: 1.5rem;
+                background-color: #fff;
+                border-radius: 8px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            }
+            pre {
+                background-color: #f8f9fa;
+                padding: 1rem;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+            .debug-result {
+                margin-top: 1rem;
+                padding: 1rem;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                background-color: #f8f9fa;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="debug-container">
+            <h2 class="mb-4">API Debug Tool</h2>
+
+            <div class="mb-4">
+                <h4>API Status Check</h4>
+                <button id="checkCsrfBtn" class="btn btn-primary me-2">
+                    Check CSRF Token
+                </button>
+                <button id="checkApiBtn" class="btn btn-info me-2">
+                    Check API Connection
+                </button>
+                <button id="clearLogBtn" class="btn btn-secondary">
+                    Clear Log
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <h4>Login Test</h4>
+                <form id="testLoginForm" class="row g-3">
+                    <div class="col-md-5">
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="testEmail"
+                            placeholder="Email"
+                            value="admin@example.com"
+                        />
+                    </div>
+                    <div class="col-md-5">
+                        <input
+                            type="password"
+                            class="form-control"
+                            id="testPassword"
+                            placeholder="Password"
+                            value="password"
+                        />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100">
+                            Test Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <h4>Results Log</h4>
+            <div id="debugResult" class="debug-result">
+                <p class="text-muted">Results will appear here...</p>
+            </div>
+        </div>
+
+        <script src="js/config.js"></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const debugResult = document.getElementById("debugResult");
+
+                function logToDebug(title, data, isError = false) {
+                    const timestamp = new Date().toISOString();
+                    const entryDiv = document.createElement("div");
+                    entryDiv.className = isError
+                        ? "alert alert-danger mt-2"
+                        : "alert alert-info mt-2";
+
+                    let content = `<strong>${timestamp} - ${title}</strong><br>`;
+
+                    if (typeof data === "object") {
+                        content += `<pre>${JSON.stringify(
+                            data,
+                            null,
+                            2
+                        )}</pre>`;
+                    } else {
+                        content += `<pre>${data}</pre>`;
+                    }
+
+                    entryDiv.innerHTML = content;
+                    debugResult.prepend(entryDiv);
+                }
+
+                // Check API Connection
+                document
+                    .getElementById("checkApiBtn")
+                    .addEventListener("click", async () => {
+                        try {
+                            const endpoints = [
+                                `${API_BASE_URL}`,
+                                `${API_BASE_URL}/status`,
+                                `http://127.0.0.1:8000/api`,
+                                `http://localhost:8000/api`,
+                            ];
+
+                            logToDebug(
+                                "API Connection Check",
+                                `Checking connection to multiple endpoints:\n${endpoints.join(
+                                    "\n"
+                                )}`
+                            );
+
+                            let success = false;
+
+                            for (const endpoint of endpoints) {
+                                try {
+                                    const response = await fetch(endpoint, {
+                                        method: "GET",
+                                        headers: {
+                                            Accept: "application/json",
+                                            "X-Requested-With":
+                                                "XMLHttpRequest",
+                                        },
+                                    });
+
+                                    if (response.ok) {
+                                        const data = await response.json();
+                                        logToDebug("API Connection Success", {
+                                            endpoint,
+                                            data,
+                                        });
+                                        success = true;
+                                        break;
+                                    } else {
+                                        logToDebug(
+                                            `API Connection Failed for ${endpoint}`,
+                                            `Status: ${response.status} - ${response.statusText}`,
+                                            true
+                                        );
+                                    }
+                                } catch (endpointError) {
+                                    logToDebug(
+                                        `API Connection Error for ${endpoint}`,
+                                        endpointError.message,
+                                        true
+                                    );
+                                }
+                            }
+
+                            if (!success) {
+                                logToDebug(
+                                    "All API Connections Failed",
+                                    "None of the endpoints responded successfully",
+                                    true
+                                );
+                            }
+                        } catch (error) {
+                            logToDebug(
+                                "API Connection Error",
+                                error.message,
+                                true
+                            );
+                        }
+                    });
+
+                // Check CSRF Token
+                document
+                    .getElementById("checkCsrfBtn")
+                    .addEventListener("click", async () => {
+                        try {
+                            const csrfUrl = `${API_BASE_URL.replace(
+                                "/api",
+                                ""
+                            )}/sanctum/csrf-cookie`;
+                            logToDebug(
+                                "CSRF Check",
+                                `Fetching CSRF token from: ${csrfUrl}`
+                            );
+
+                            const response = await fetch(csrfUrl, {
+                                method: "GET",
+                                credentials: "include",
+                                headers: {
+                                    Accept: "application/json",
+                                    "X-Requested-With": "XMLHttpRequest",
+                                },
+                            });
+
+                            if (response.ok) {
+                                logToDebug(
+                                    "CSRF Cookie Set",
+                                    "CSRF cookie should be set in browser"
+                                );
+
+                                // Get all cookies and display them
+                                const cookies = document.cookie
+                                    .split(";")
+                                    .map((cookie) => cookie.trim());
+                                logToDebug(
+                                    "Current Cookies",
+                                    cookies.join("\n")
+                                );
+                            } else {
+                                logToDebug(
+                                    "CSRF Cookie Failed",
+                                    `Status: ${response.status} - ${response.statusText}`,
+                                    true
+                                );
+                            }
+                        } catch (error) {
+                            logToDebug("CSRF Error", error.message, true);
+                        }
+                    });
+
+                // Test Login
+                document
+                    .getElementById("testLoginForm")
+                    .addEventListener("submit", async (event) => {
+                        event.preventDefault();
+
+                        const email =
+                            document.getElementById("testEmail").value;
+                        const password =
+                            document.getElementById("testPassword").value;
+
+                        try {
+                            // First get CSRF token
+                            try {
+                                const csrfUrl = `${API_BASE_URL.replace(
+                                    "/api",
+                                    ""
+                                )}/sanctum/csrf-cookie`;
+                                logToDebug(
+                                    "CSRF Check",
+                                    `Fetching CSRF token from: ${csrfUrl}`
+                                );
+
+                                const csrfResponse = await fetch(csrfUrl, {
+                                    method: "GET",
+                                    credentials: "include",
+                                    headers: {
+                                        Accept: "application/json",
+                                        "X-Requested-With": "XMLHttpRequest",
+                                    },
+                                });
+
+                                if (csrfResponse.ok) {
+                                    logToDebug(
+                                        "CSRF Cookie Set",
+                                        "CSRF cookie should be set in browser"
+                                    );
+
+                                    // Get all cookies and display them
+                                    const cookies = document.cookie
+                                        .split(";")
+                                        .map((cookie) => cookie.trim());
+                                    logToDebug(
+                                        "Current Cookies",
+                                        cookies.join("\n")
+                                    );
+                                } else {
+                                    logToDebug(
+                                        "CSRF Cookie Failed",
+                                        `Status: ${csrfResponse.status} - ${csrfResponse.statusText}`,
+                                        true
+                                    );
+                                }
+                            } catch (csrfError) {
+                                logToDebug(
+                                    "CSRF Error",
+                                    csrfError.message,
+                                    true
+                                );
+                            }
+
+                            // Try multiple login endpoints
+                            const loginEndpoints = [
+                                `${API_BASE_URL}/login`,
+                                `${API_BASE_URL}/auth/login`,
+                                `http://127.0.0.1:8000/api/login`,
+                                `http://localhost:8000/api/login`,
+                            ];
+
+                            let loginSuccess = false;
+                            let loginData = null;
+
+                            for (const endpoint of loginEndpoints) {
+                                try {
+                                    logToDebug(
+                                        "Login Test",
+                                        `Attempting login with: ${email} to endpoint: ${endpoint}`
+                                    );
+
+                                    const loginResponse = await fetch(
+                                        endpoint,
+                                        {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type":
+                                                    "application/json",
+                                                Accept: "application/json",
+                                                "X-Requested-With":
+                                                    "XMLHttpRequest",
+                                            },
+                                            credentials: "include",
+                                            body: JSON.stringify({
+                                                email,
+                                                password,
+                                            }),
+                                        }
+                                    );
+
+                                    const responseData =
+                                        await loginResponse.json();
+
+                                    if (loginResponse.ok) {
+                                        logToDebug("Login Success", {
+                                            endpoint,
+                                            data: responseData,
+                                        });
+                                        loginSuccess = true;
+                                        loginData = responseData;
+                                        break;
+                                    } else {
+                                        logToDebug(
+                                            `Login Failed for ${endpoint}`,
+                                            responseData,
+                                            true
+                                        );
+                                    }
+                                } catch (endpointError) {
+                                    logToDebug(
+                                        `Login Error for ${endpoint}`,
+                                        endpointError.message,
+                                        true
+                                    );
+                                }
+                            }
+
+                            if (!loginSuccess) {
+                                logToDebug(
+                                    "All Login Attempts Failed",
+                                    "None of the endpoints accepted the credentials",
+                                    true
+                                );
+                            } else if (loginData && loginData.access_token) {
+                                // Display token information but don't actually store it
+                                logToDebug("Auth Token Information", {
+                                    token_type: loginData.token_type,
+                                    token_preview:
+                                        loginData.access_token.substring(
+                                            0,
+                                            10
+                                        ) + "...",
+                                    user: loginData.user,
+                                });
+                            }
+                        } catch (error) {
+                            logToDebug("Login Error", error.message, true);
+                        }
+                    });
+
+                // Clear Log
+                document
+                    .getElementById("clearLogBtn")
+                    .addEventListener("click", () => {
+                        debugResult.innerHTML =
+                            '<p class="text-muted">Results will appear here...</p>';
+                    });
+
+                // Show URL Configuration
+                logToDebug("Frontend Configuration", {
+                    "API Base URL": API_BASE_URL,
+                    "Current Location": window.location.href,
+                });
+            });
+        </script>
+    </body>
+</html>
