@@ -506,6 +506,66 @@ function showUserFormModal(title, userData = null, submitCallback, onCloseCallba
     modal.show();
 }
 
+/**
+ * Mengatur class active pada sidebar sesuai tab yang dipilih
+ * @param {string} tabId - ID elemen sidebar yang akan diaktifkan
+ */
+function setActiveSidebarTab(tabId) {
+    const sidebarTabs = [
+        'navTasks',
+        'navUserManagement',
+        'navActivityLogs'
+    ];
+    sidebarTabs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === tabId) {
+                el.classList.add('active');
+                el.setAttribute('aria-current', 'page');
+            } else {
+                el.classList.remove('active');
+                el.removeAttribute('aria-current');
+            }
+        }
+    });
+}
+
+/**
+ * Menampilkan view utama dan mengatur tab sidebar active
+ * @param {string} viewId - ID konten utama yang akan ditampilkan
+ */
+function showView(viewId) {
+    const views = [
+        'dashboardView',
+        'taskManagementView',
+        'userManagementView',
+        'activityLogsView'
+    ];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (id === viewId) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+    });
+    // Atur tab sidebar active
+    if (viewId === 'taskManagementView') {
+        setActiveSidebarTab('navTasks');
+        if (typeof loadTasks === 'function') loadTasks();
+    } else if (viewId === 'userManagementView') {
+        setActiveSidebarTab('navUserManagement');
+        if (typeof loadUsers === 'function') loadUsers();
+    } else if (viewId === 'activityLogsView') {
+        setActiveSidebarTab('navActivityLogs');
+        if (typeof loadActivityLogs === 'function') loadActivityLogs();
+    } else {
+        setActiveSidebarTab(null);
+    }
+}
+
 // Fungsi lain yang mungkin berguna:
 // - createModal(title, bodyContent, footerButtons)
 // - updateTable(tableId, data, columnsConfig)

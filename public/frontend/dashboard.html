@@ -203,39 +203,6 @@
                 }
                 showView("taskManagementView");
             });
-
-            function showView(viewId) {
-                const views = [
-                    "dashboardView",
-                    "taskManagementView",
-                    "userManagementView",
-                    "activityLogsView",
-                ];
-                views.forEach((id) => {
-                    const viewElement = document.getElementById(id);
-                    if (viewElement) viewElement.classList.add("hidden");
-                });
-
-                const targetView = document.getElementById(viewId);
-                if (targetView) {
-                    targetView.classList.remove("hidden");
-                    if (
-                        viewId === "taskManagementView" &&
-                        typeof loadTasks === "function"
-                    )
-                        loadTasks();
-                    if (
-                        viewId === "userManagementView" &&
-                        typeof loadUsers === "function"
-                    )
-                        loadUsers();
-                    if (
-                        viewId === "activityLogsView" &&
-                        typeof loadActivityLogs === "function"
-                    )
-                        loadActivityLogs();
-                }
-            }
         </script>
     </body>
 </html>
