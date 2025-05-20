@@ -5,7 +5,6 @@
  * Biasanya dipanggil setelah DOM dimuat dan pengguna terotentikasi.
  */
 function initializeDashboard() {
-    console.log('Dashboard initialized');
     // Panggil fungsi untuk memuat data awal, misalnya daftar tugas
     loadTasks();
 
@@ -78,7 +77,6 @@ async function showEditTaskForm(taskId) {
         showTaskFormModal('Edit Tugas', taskData, handleUpdateTask, loadTasks);
 
     } catch (error) {
-        console.error('Error loading task details:', error);
         showNotification(`Gagal memuat detail tugas: ${error.message}`, 'error', 'taskManagementView');
     } finally {
         hideSpinner('taskManagementView');
@@ -132,7 +130,6 @@ async function handleCreateTask(formData) {
         loadTasks(); // Muat ulang daftar tugas
 
     } catch (error) {
-        console.error('Error creating task:', error);
         showNotification(`Gagal membuat tugas: ${error.message}`, 'error', 'taskManagementView');
     } finally {
         hideSpinner('taskManagementView');
@@ -194,7 +191,6 @@ async function handleUpdateTask(formData) {
         loadTasks(); // Muat ulang daftar tugas
 
     } catch (error) {
-        console.error('Error updating task:', error);
         showNotification(`Gagal memperbarui tugas: ${error.message}`, 'error', 'taskManagementView');
     } finally {
         hideSpinner('taskManagementView');
@@ -207,7 +203,6 @@ async function handleUpdateTask(formData) {
 async function loadTasks() {
     const taskManagementView = document.getElementById('taskManagementView');
     if (!taskManagementView) {
-        console.error('Task management view element not found.');
         return;
     }
 
@@ -237,22 +232,15 @@ async function loadTasks() {
         // Baca response text terlebih dahulu untuk memeriksa validitas JSON
         const responseText = await response.text();
 
-        // Log response untuk debugging
-        // console.log('API Response text:', responseText);
-
         let result;
         try {
             // Parse manual setelah kita memiliki teks respons
             result = JSON.parse(responseText);
-            // console.log('API Response parsed:', result);
         } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
-
             // Coba bersihkan teks respons dari karakter yang bermasalah
             let cleanedText = responseText.replace(/[\x00-\x1F\x7F]/g, '');
             try {
                 result = JSON.parse(cleanedText);
-                // console.log('API Response parsed after cleaning:', result);
             } catch (secondParseError) {
                 throw new Error(`Respons server mengandung format JSON yang tidak valid: ${parseError.message}`);
             }
@@ -272,7 +260,6 @@ async function loadTasks() {
         }
 
     } catch (error) {
-        console.error('Error loading tasks:', error);
         showNotification(`Gagal memuat daftar tugas: ${error.message}`, 'error', 'taskManagementView');
         taskManagementView.innerHTML = `<div class="alert alert-danger">
             <h4>Gagal memuat tugas</h4>
@@ -293,8 +280,6 @@ function renderTasks(tasks) {
     // Hapus spinner sebelum render (jika belum hilang oleh innerHTML overwrite)
     hideSpinner('taskManagementView');
 
-    // console.log('Rendering tasks:', tasks);
-
     if (!tasks || tasks.length === 0) {
         taskManagementView.innerHTML = `
             <div class="alert alert-info">
@@ -310,19 +295,23 @@ function renderTasks(tasks) {
         const addTaskButtonEmpty = document.getElementById('addTaskButtonEmpty');
         if (addTaskButtonEmpty) {
             addTaskButtonEmpty.addEventListener('click', () => {
-                // console.log('Add task button (empty) clicked');
                 showAddTaskForm();
             });
         }
         return;
     }
 
+    // Tambahkan tombol Export CSV untuk semua role
+    let exportCsvBtnHtml = `<button class="btn btn-success ms-2" id="exportCsvButton"><i class="bi bi-file-earmark-spreadsheet"></i> Export CSV</button>`;
     let tasksHtml = `
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3>Daftar Tugas</h3>
-            <button class="btn btn-primary" id="addTaskButtonRendered">
-                <i class="bi bi-plus-circle-fill"></i> Tambah Tugas
-            </button>
+            <div>
+                <button class="btn btn-primary" id="addTaskButtonRendered">
+                    <i class="bi bi-plus-circle-fill"></i> Tambah Tugas
+                </button>
+                ${exportCsvBtnHtml}
+            </div>
         </div>
         <div class="table-responsive">
             <table class="table table-hover table-striped">
@@ -427,7 +416,6 @@ function renderTasks(tasks) {
     const addTaskButtonRendered = document.getElementById('addTaskButtonRendered');
     if (addTaskButtonRendered) {
         addTaskButtonRendered.addEventListener('click', () => {
-            console.log('Add task button (rendered) clicked');
             showAddTaskForm();
         });
     }
@@ -443,18 +431,21 @@ function renderTasks(tasks) {
             if (!taskId) return;
 
             if (target.classList.contains('edit-task-btn')) {
-                console.log('Edit task:', taskId);
                 await showEditTaskForm(taskId);
             } else if (target.classList.contains('delete-task-btn')) {
-                console.log('Delete task:', taskId);
                 if (confirm('Anda yakin ingin menghapus tugas ini?')) {
                     await deleteTask(taskId);
                 }
             } else if (target.classList.contains('complete-task-btn')) {
-                console.log('Complete task:', taskId);
                 await updateTaskStatus(taskId, 'done');
             }
         });
+    }
+
+    // Setelah render, tambahkan event listener untuk tombol Export CSV
+    const exportBtn = document.getElementById('exportCsvButton');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', handleExportCsv);
     }
 }
 
@@ -500,10 +491,7 @@ async function deleteTask(taskId) {
         }
 
     } catch (error) {
-        console.error('Error deleting task:', error);
         showNotification(`Gagal menghapus tugas: ${error.message}`, 'error', 'taskManagementView');
-    } finally {
-        // Spinner akan hilang saat loadTasks() dipanggil dan me-render ulang
     }
 }
 
@@ -548,15 +536,11 @@ async function updateTaskStatus(taskId, newStatus) {
         // Baca response text terlebih dahulu untuk memeriksa validitas JSON
         const responseText = await response.text();
 
-        // Log response untuk debugging
-        console.log('Update task status API Response text:', responseText);
-
         let result;
         try {
             // Parse manual setelah kita memiliki teks respons
             result = JSON.parse(responseText);
         } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
             throw new Error(`Respons server mengandung format JSON yang tidak valid: ${parseError.message}`);
         }
 
@@ -570,7 +554,6 @@ async function updateTaskStatus(taskId, newStatus) {
         loadTasks();
 
     } catch (error) {
-        console.error('Error updating task status:', error);
         showNotification(`Gagal memperbarui status tugas: ${error.message}`, 'error', 'taskManagementView');
     }
 }

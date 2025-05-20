@@ -566,6 +566,66 @@ function showView(viewId) {
     }
 }
 
+/**
+ * Render tombol Export CSV jika user admin/manager
+ * @returns {string}
+ */
+function renderExportCsvButton() {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (userData && (userData.role === 'admin' || userData.role === 'manager')) {
+        return `<button class="btn btn-outline-success ms-2" id="exportCsvButton"><i class="bi bi-file-earmark-spreadsheet"></i> Export CSV</button>`;
+    }
+    return '';
+}
+
+/**
+ * Download file CSV dari API
+ */
+function handleExportCsv() {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+    fetch('/api/tasks/export/csv', {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token
+        }
+    })
+        .then(response => {
+            if (!response.ok) throw new Error('Gagal mengunduh CSV');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tasks_export.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+            showNotification('Gagal mengunduh file CSV', 'error', 'taskManagementView');
+        });
+}
+
+// Patch renderTasks agar menyisipkan tombol Export CSV
+const _renderTasks = window.renderTasks;
+window.renderTasks = function (tasks) {
+    const taskManagementView = document.getElementById('taskManagementView');
+    if (taskManagementView) {
+        let exportBtnHtml = renderExportCsvButton();
+        // Sisipkan tombol Export CSV di atas daftar tugas
+        taskManagementView.innerHTML = exportBtnHtml + taskManagementView.innerHTML;
+    }
+    _renderTasks(tasks);
+    // Tambahkan event listener setelah render
+    const exportBtn = document.getElementById('exportCsvButton');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', handleExportCsv);
+    }
+};
+
 // Fungsi lain yang mungkin berguna:
 // - createModal(title, bodyContent, footerButtons)
 // - updateTable(tableId, data, columnsConfig)

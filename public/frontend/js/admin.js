@@ -684,12 +684,12 @@ function renderActivityLogs(logs) {
         <h3 class="mb-3">Log Aktivitas Sistem</h3>
         <div class="table-responsive">
             <table class="table table-sm table-striped table-bordered">
-                <thead class="table-dark">
+                <thead class="table-dark text-center">
                     <tr>
-                        <th>No</th>
-                        <th>Deskripsi</th>
-                        <th>Pengguna</th>
-                        <th>Waktu</th>
+                        <th class="text-black">No</th>
+                        <th class="text-black">Deskripsi</th>
+                        <th class="text-black">Pengguna</th>
+                        <th class="text-black">Waktu</th>
                     </tr>
                 </thead>
                 <tbody>

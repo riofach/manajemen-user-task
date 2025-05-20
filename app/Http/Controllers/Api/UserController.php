@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule; // Untuk validasi unique dan enum
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -68,6 +69,9 @@ class UserController extends Controller
             'status' => $request->input('status', true), // Default status true jika tidak disediakan
             'email_verified_at' => now(), // Asumsikan email terverifikasi saat dibuat oleh admin
         ]);
+
+        // Catat log aktivitas
+        $this->logActivity(Auth::id(), 'create_user', 'Membuat pengguna baru: ' . $user->name . ' (' . $user->email . ')');
 
         // Kembalikan respons sukses dengan data pengguna yang baru dibuat (tanpa password)
         return response()->json([
@@ -161,6 +165,9 @@ class UserController extends Controller
 
         $user->save();
 
+        // Catat log aktivitas
+        $this->logActivity(Auth::id(), 'update_user', 'Memperbarui pengguna: ' . $user->name . ' (' . $user->email . ')');
+
         // Kembalikan respons sukses dengan data pengguna yang diperbarui
         return response()->json([
             'status' => 'success',
@@ -194,12 +201,30 @@ class UserController extends Controller
             ], 403);
         }
 
+        $deletedName = $user->name;
+        $deletedEmail = $user->email;
         // Hapus pengguna
         $user->delete();
+
+        // Catat log aktivitas
+        $this->logActivity(Auth::id(), 'delete_user', 'Menghapus pengguna: ' . $deletedName . ' (' . $deletedEmail . ')');
 
         return response()->json([
             'status' => 'success',
             'message' => 'Pengguna berhasil dihapus.'
         ], 200);
+    }
+
+    /**
+     * Helper untuk mencatat log aktivitas ke tabel activity_logs
+     */
+    private function logActivity($userId, $action, $description)
+    {
+        \App\Models\ActivityLog::create([
+            'user_id' => $userId,
+            'action' => $action,
+            'description' => $description,
+            'logged_at' => now(),
+        ]);
     }
 }

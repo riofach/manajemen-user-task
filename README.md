@@ -20,6 +20,7 @@ Dokumen acuan utama: `Tes Evaluasi Kemampuan Fullstack Developer-20250519035749.
     -   Melihat detail satu tugas (GET `/tasks/{task}`).
     -   Memperbarui tugas (PUT `/tasks/{task}`).
     -   Menghapus tugas (DELETE `/tasks/{task}`) - Akses: Admin atau pembuat tugas.
+    -   **Export daftar tugas ke CSV (GET `/tasks/export/csv`) - Akses: Admin, Manager.**
 -   **Manajemen Log Aktivitas:**
     -   Melihat daftar semua log aktivitas (GET `/logs`) - Akses: Admin.
 -   **Proses Batch (Scheduler):**
@@ -56,7 +57,7 @@ Dokumen acuan utama: `Tes Evaluasi Kemampuan Fullstack Developer-20250519035749.
 1.  **Clone Repository:**
 
     ```bash
-    git clone [URL_REPOSITORY_ANDA]
+    git clone https://github.com/riofach/manajemen-user-task.git
     cd nama-direktori-proyek
     ```
 
@@ -121,7 +122,13 @@ Dokumen acuan utama: `Tes Evaluasi Kemampuan Fullstack Developer-20250519035749.
 
     Laravel sudah dikonfigurasi untuk langsung mengarahkan ke halaman frontend ketika Anda mengakses URL root.
 
-9.  **Untuk Scheduler:** Jalankan `php artisan schedule:work` di terminal terpisah atau konfigurasikan cron job.
+9.  **Untuk Scheduler:**
+    Jalankan `php artisan schedule:work` di terminal terpisah untuk menjalankan semua perintah yang dijadwalkan secara otomatis setiap menit (mirip worker Laravel). Cocok untuk development tanpa perlu setup cron job manual.
+    > **Catatan:**
+    >
+    > -   `php artisan schedule:work` akan terus berjalan di background dan menjalankan semua job yang dijadwalkan di `app/Console/Kernel.php`.
+    > -   Untuk production, sebaiknya gunakan cron job:
+    >     `* * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1`
 
 ## Mengakses Aplikasi
 
@@ -140,26 +147,6 @@ Dokumen acuan utama: `Tes Evaluasi Kemampuan Fullstack Developer-20250519035749.
     - Manager dapat membuat tugas baru dan menetapkannya ke staff.
     - Staff hanya dapat melihat dan mengelola tugas miliknya sendiri.
 
-## Struktur Frontend
-
-Frontend diimplementasikan dengan pendekatan Vanilla JS (tanpa framework) dan terletak di direktori `public/frontend/`. Struktur kunci meliputi:
-
-```
-public/frontend/
-├── css/
-│   └── style.css               # Stylesheet utama
-├── js/
-│   ├── config.js               # Konfigurasi API URL
-│   ├── auth.js                 # Fungsi autentikasi (login/logout)
-│   ├── ui.js                   # Helper UI (notifikasi, spinner)
-│   ├── dashboard.js            # Logika manajemen tugas
-│   └── admin.js                # Logika khusus admin (manajemen user, log)
-├── partials/
-│   └── navbar.html             # Komponen navbar yang dapat digunakan kembali
-├── index.html                  # Halaman login
-└── dashboard.html              # Layout dashboard utama
-```
-
 ## Integrasi Frontend-Backend
 
 Frontend Vanilla JS terhubung dengan backend Laravel API melalui konfigurasi di `js/config.js`. Semua permintaan API dilakukan menggunakan `fetch()` API dan token otentikasi disimpan di `localStorage`. Fitur utama meliputi:
@@ -173,20 +160,21 @@ Frontend Vanilla JS terhubung dengan backend Laravel API melalui konfigurasi di 
 
 Semua endpoint API diakses melalui prefix `/api` (misalnya `http://localhost:8000/api/...`).
 
-| Method | URI             | Controller#Action           | Deskripsi                                                  | Middleware Pelindung          |
-| :----- | :-------------- | :-------------------------- | :--------------------------------------------------------- | :---------------------------- |
-| POST   | `/login`        | AuthController@login        | Login pengguna.                                            | - (Publik)                    |
-| POST   | `/logout`       | AuthController@logout       | Logout pengguna.                                           | `auth:sanctum`, `user.status` |
-| GET    | `/user`         | (Closure)                   | Detail pengguna terautentikasi.                            | `auth:sanctum`, `user.status` |
-| GET    | `/users`        | UserController@index        | Daftar semua pengguna (paginasi).                          | `auth:sanctum`, `user.status` |
-| POST   | `/users`        | UserController@store        | Membuat pengguna baru.                                     | `auth:sanctum`, `user.status` |
-| GET    | `/users/{user}` | UserController@show         | Detail satu pengguna.                                      | `auth:sanctum`, `user.status` |
-| GET    | `/tasks`        | TaskController@index        | Daftar tugas (filter by role, paginasi).                   | `auth:sanctum`, `user.status` |
-| POST   | `/tasks`        | TaskController@store        | Membuat tugas baru.                                        | `auth:sanctum`, `user.status` |
-| GET    | `/tasks/{task}` | TaskController@show         | Detail satu tugas.                                         | `auth:sanctum`, `user.status` |
-| PUT    | `/tasks/{task}` | TaskController@update       | Memperbarui tugas.                                         | `auth:sanctum`, `user.status` |
-| DELETE | `/tasks/{task}` | TaskController@destroy      | Menghapus tugas.                                           | `auth:sanctum`, `user.status` |
-| GET    | `/logs`         | ActivityLogController@index | Melihat daftar semua log aktivitas (paginasi, Admin only). | `auth:sanctum`, `user.status` |
+| Method | URI                 | Controller#Action           | Deskripsi                                                  | Middleware Pelindung          |
+| :----- | :------------------ | :-------------------------- | :--------------------------------------------------------- | :---------------------------- |
+| POST   | `/login`            | AuthController@login        | Login pengguna.                                            | - (Publik)                    |
+| POST   | `/logout`           | AuthController@logout       | Logout pengguna.                                           | `auth:sanctum`, `user.status` |
+| GET    | `/user`             | (Closure)                   | Detail pengguna terautentikasi.                            | `auth:sanctum`, `user.status` |
+| GET    | `/users`            | UserController@index        | Daftar semua pengguna (paginasi).                          | `auth:sanctum`, `user.status` |
+| POST   | `/users`            | UserController@store        | Membuat pengguna baru.                                     | `auth:sanctum`, `user.status` |
+| GET    | `/users/{user}`     | UserController@show         | Detail satu pengguna.                                      | `auth:sanctum`, `user.status` |
+| GET    | `/tasks`            | TaskController@index        | Daftar tugas (filter by role, paginasi).                   | `auth:sanctum`, `user.status` |
+| POST   | `/tasks`            | TaskController@store        | Membuat tugas baru.                                        | `auth:sanctum`, `user.status` |
+| GET    | `/tasks/{task}`     | TaskController@show         | Detail satu tugas.                                         | `auth:sanctum`, `user.status` |
+| PUT    | `/tasks/{task}`     | TaskController@update       | Memperbarui tugas.                                         | `auth:sanctum`, `user.status` |
+| DELETE | `/tasks/{task}`     | TaskController@destroy      | Menghapus tugas.                                           | `auth:sanctum`, `user.status` |
+| GET    | `/logs`             | ActivityLogController@index | Melihat daftar semua log aktivitas (paginasi, Admin only). | `auth:sanctum`, `user.status` |
+| GET    | `/tasks/export/csv` | TaskController@exportCsv    | Export daftar tugas ke CSV (Admin/Manager)                 | `auth:sanctum`, `user.status` |
 
 **Catatan:** Semua request ke API akan dicatat di `storage/logs/api_activity.log` oleh middleware `LogRequest`.
 

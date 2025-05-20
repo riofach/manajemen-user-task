@@ -63,6 +63,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
     Route::put('/tasks/{task}', [TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
+    // Export Task CSV
+    Route::get('/tasks/export/csv', [TaskController::class, 'exportCsv'])->name('tasks.export.csv');
 
     // Activity Log Route (Admin Only)
     Route::get('/logs', [ActivityLogController::class, 'index'])->name('logs.index');

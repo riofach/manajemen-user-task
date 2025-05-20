@@ -137,6 +137,19 @@ class TaskController extends Controller
     }
 
     /**
+     * Helper untuk mencatat log aktivitas ke tabel activity_logs
+     */
+    private function logActivity($userId, $action, $description)
+    {
+        \App\Models\ActivityLog::create([
+            'user_id' => $userId,
+            'action' => $action,
+            'description' => $description,
+            'logged_at' => now(),
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      * POST /tasks
      * Akses: Semua role bisa membuat. Manager hanya bisa assign ke staff.
@@ -180,6 +193,8 @@ class TaskController extends Controller
             'due_date' => $request->due_date,
             'created_by_id' => $user->id,
         ]);
+        // Catat log aktivitas
+        $this->logActivity($user->id, 'create_task', 'Membuat tugas baru: ' . $task->title);
 
         return response()->json(['status' => 'success', 'message' => 'Tugas berhasil dibuat.', 'data' => $task->load(['assignedTo:id,name,email', 'createdBy:id,name,email'])], 201);
     }
@@ -228,6 +243,8 @@ class TaskController extends Controller
         }
 
         $task->update($request->all());
+        // Catat log aktivitas
+        $this->logActivity(Auth::id(), 'update_task', 'Memperbarui tugas: ' . $task->title);
 
         return response()->json(['status' => 'success', 'message' => 'Tugas berhasil diperbarui.', 'data' => $task->load(['assignedTo:id,name,email', 'createdBy:id,name,email'])], 200);
     }
@@ -239,7 +256,66 @@ class TaskController extends Controller
     public function destroy(Task $task)
     {
         $this->authorize('delete', $task);
+        $deletedTitle = $task->title;
         $task->delete();
+        // Catat log aktivitas
+        $this->logActivity(Auth::id(), 'delete_task', 'Menghapus tugas: ' . $deletedTitle);
         return response()->json(['status' => 'success', 'message' => 'Tugas berhasil dihapus.'], 200);
+    }
+
+    /**
+     * Export daftar tugas ke CSV (Bonus)
+     * GET /tasks/export/csv
+     * Akses: semua role (admin, manager, staff)
+     */
+    public function exportCsv(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Akses ditolak. Silakan login.'], 403);
+        }
+
+        // Query/filter sama seperti index()
+        $query = Task::with(['assignedTo:id,name,email', 'createdBy:id,name,email']);
+        if ($user->role === 'manager') {
+            $query->where(function ($q) use ($user) {
+                $q->where('created_by_id', $user->id)
+                    ->orWhere('assigned_to_id', $user->id)
+                    ->orWhereHas('assignedTo', function ($assignedUserQuery) {
+                        $assignedUserQuery->where('role', 'staff');
+                    });
+            });
+        } elseif ($user->role === 'staff') {
+            $query->where(function ($q) use ($user) {
+                $q->where('created_by_id', $user->id)
+                    ->orWhere('assigned_to_id', $user->id);
+            });
+        }
+        $tasks = $query->latest()->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="tasks_export_' . now()->format('Ymd_His') . '.csv"',
+        ];
+
+        $callback = function () use ($tasks) {
+            $handle = fopen('php://output', 'w');
+            // Header CSV
+            fputcsv($handle, ['No', 'Judul', 'Deskripsi', 'Status', 'Tenggat Waktu', 'Dibuat Oleh', 'Ditugaskan Kepada']);
+            $no = 1;
+            foreach ($tasks as $task) {
+                fputcsv($handle, [
+                    $no++,
+                    $task->title,
+                    $task->description,
+                    $task->status,
+                    $task->due_date ? $task->due_date->format('Y-m-d') : '',
+                    $task->createdBy ? $task->createdBy->name : '',
+                    $task->assignedTo ? $task->assignedTo->name : '',
+                ]);
+            }
+            fclose($handle);
+        };
+        return response()->stream($callback, 200, $headers);
     }
 }
